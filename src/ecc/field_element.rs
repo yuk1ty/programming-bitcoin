@@ -2,14 +2,14 @@ use std::ops::{Add, Mul, Sub};
 
 #[derive(Debug, PartialEq)]
 pub struct FieldElement {
-    num: i32,
-    prime: i32,
+    num: i128,
+    prime: i128,
 }
 
 impl FieldElement {
-    pub fn new(num: i32, prime: i32) -> Self {
+    pub fn new(num: i128, prime: i128) -> Self {
         assert!(
-            num > 0 || num <= prime,
+            num <= prime,
             "Num {} not in field range 0 to {}",
             num,
             prime - 1
@@ -18,7 +18,7 @@ impl FieldElement {
     }
 
     pub fn pow(&self, exponent: u32) -> Self {
-        let num = (i32::pow(self.num, exponent)) % self.prime;
+        let num = (i128::pow(self.num, exponent)) % self.prime;
         FieldElement::new(num, self.prime)
     }
 }
