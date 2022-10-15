@@ -164,4 +164,34 @@ mod test {
         let b = Points::new(-1, 1, 5, 7);
         assert!(matches!(a + b, Points::Inf { a: 5, b: 7 }));
     }
+
+    #[test]
+    fn test_add4() {
+        let a = Points::new(3, 7, 5, 7);
+        let b = Points::new(-1, -1, 5, 7);
+        assert!(matches!(
+            a + b,
+            Points::Point {
+                x: 2,
+                y: -5,
+                a: 5,
+                b: 7
+            }
+        ));
+    }
+
+    #[test]
+    fn test_add5() {
+        let a = Points::new(-1, -1, 5, 7);
+        let b = Points::new(-1, -1, 5, 7);
+        assert!(matches!(
+            a + b,
+            Points::Point {
+                x: 18,
+                y: 77,
+                a: 5,
+                b: 7
+            }
+        ));
+    }
 }
