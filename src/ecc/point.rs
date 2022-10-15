@@ -79,12 +79,14 @@ impl Add for Points {
                     return Points::Point { x, y, a: a1, b: b1 };
                 }
 
-                unimplemented!()
+                unreachable!("Theoretically unreachable point!")
             }
             (Points::Inf { .. }, Points::Point { .. }) => rhs,
             (Points::Point { .. }, Points::Inf { .. }) => self,
             // TODO 両方とも無限遠点だった場合はそもそも何かがおかしい？
-            (Points::Inf { .. }, Points::Inf { .. }) => todo!(),
+            (Points::Inf { .. }, Points::Inf { .. }) => {
+                unreachable!("You can't pass both points at infinity here.")
+            }
         }
     }
 }
