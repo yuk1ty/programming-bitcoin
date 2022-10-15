@@ -1,75 +1,167 @@
-use std::ops::Add;
+use std::{fmt::Display, ops::Add};
 
 #[derive(Debug, PartialEq)]
-pub struct Point {
-    a: i128,
-    b: i128,
-    x: Option<i128>,
-    y: Option<i128>,
+pub enum Points {
+    Point { x: i128, y: i128, a: i128, b: i128 },
+    Inf { a: i128, b: i128 },
 }
 
-impl Point {
-    pub fn new(x: Option<i128>, y: Option<i128>, a: i128, b: i128) -> Point {
-        if let (Some(x), Some(y)) = (x, y) {
-            assert_eq!(y.pow(2), x.pow(3) + a * x + b);
+impl Points {
+    pub fn new(x: i128, y: i128, a: i128, b: i128) -> Points {
+        assert_eq!(y.pow(2), x.pow(3) + a * x + b);
+        Points::Point { x, y, a, b }
+    }
+
+    pub fn inf(a: i128, b: i128) -> Points {
+        Points::Inf { a, b }
+    }
+
+    pub fn a(&self) -> i128 {
+        match *self {
+            Points::Point {
+                x: _,
+                y: _,
+                a,
+                b: _,
+            } => a,
+            Points::Inf { a, b: _ } => a,
         }
-        Point { a, b, x, y }
+    }
+
+    pub fn b(&self) -> i128 {
+        match *self {
+            Points::Point {
+                x: _,
+                y: _,
+                a: _,
+                b,
+            } => b,
+            Points::Inf { a: _, b } => b,
+        }
     }
 }
 
-impl Add for Point {
-    type Output = Point;
+impl Add for Points {
+    type Output = Points;
 
     fn add(self, rhs: Self) -> Self::Output {
-        if self.x.is_none() {
-            return rhs;
-        }
-        if rhs.x.is_none() {
-            return self;
-        }
+        assert!(self.a() == rhs.a() && self.b() == rhs.b());
+        // TODO この実装にする場合、無限遠点が含まれる計算の捌き方がこれでよかったかを検討する必要がありそう。
+        match (&self, &rhs) {
+            (
+                &Points::Point {
+                    x: x1,
+                    y: y1,
+                    a: a1,
+                    b: b1,
+                },
+                &Points::Point { x: x2, y: y2, .. },
+            ) => {
+                if x1 == x2 && y1 != y2 {
+                    return Points::Inf { a: a1, b: b1 };
+                }
 
-        // TODO add more conditions later
-        todo!()
+                if x1 != x2 {
+                    let s = (y2 - y1) / (x2 - x1);
+                    let x = s.pow(2) - x1 - x2;
+                    let y = s * (x1 - x) - y1;
+                    return Points::Point { x, y, a: a1, b: b1 };
+                }
+
+                if self == rhs && y1 == 0 {
+                    return Points::Inf { a: a1, b: b1 };
+                }
+
+                if self == rhs {
+                    let s = (3 * x1.pow(2) + a1) / (2 * y1);
+                    let x = s.pow(2) - 2 * x1;
+                    let y = s * (x1 - x) - y1;
+                    return Points::Point { x, y, a: a1, b: b1 };
+                }
+
+                unimplemented!()
+            }
+            (Points::Inf { .. }, Points::Point { .. }) => rhs,
+            (Points::Point { .. }, Points::Inf { .. }) => self,
+            // TODO 両方とも無限遠点だった場合はそもそも何かがおかしい？
+            (Points::Inf { .. }, Points::Inf { .. }) => todo!(),
+        }
+    }
+}
+
+impl Display for Points {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Points::Point { x, y, a, b } => write!(f, "Point({}, {})_{}_{}", x, y, a, b),
+            Points::Inf { .. } => write!(f, "Point(infinity)"),
+        }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use super::Point;
+    use super::Points;
 
     #[test]
     fn test_point_creation() {
-        let point = Point::new(Some(-1), Some(-1), 5, 7);
-        assert!(point.x.unwrap() == -1);
-        assert!(point.y.unwrap() == -1);
-        assert!(point.a == 5);
-        assert!(point.b == 7);
+        let point = Points::new(-1, -1, 5, 7);
+        assert!(matches!(
+            point,
+            Points::Point {
+                x: -1,
+                y: -1,
+                a: 5,
+                b: 7
+            }
+        ));
     }
 
     #[test]
     fn test_inf_point_creation() {
-        let point = Point::new(None, None, 5, 7);
-        assert!(point.a == 5);
-        assert!(point.b == 7);
+        let point = Points::inf(5, 7);
+        assert!(matches!(point, Points::Inf { a: 5, b: 7 }));
     }
 
     #[test]
     #[should_panic]
     fn test_fail_point_creation() {
-        let _ = Point::new(Some(-1), Some(-2), 5, 7);
+        let _ = Points::new(-1, -2, 5, 7);
     }
 
     #[test]
     fn test_add1() {
-        let a = Point::new(None, None, 5, 7);
-        let b = Point::new(Some(2), Some(5), 5, 7);
-        assert_eq!(a + b, Point::new(Some(2), Some(5), 5, 7));
+        let a = Points::inf(5, 7);
+        let b = Points::new(2, 5, 5, 7);
+        assert!(matches!(
+            a + b,
+            Points::Point {
+                x: 2,
+                y: 5,
+                a: 5,
+                b: 7
+            }
+        ));
     }
 
     #[test]
     fn test_add2() {
-        let a = Point::new(None, None, 5, 7);
-        let b = Point::new(Some(2), Some(5), 5, 7);
-        assert_eq!(b + a, Point::new(Some(2), Some(5), 5, 7));
+        let a = Points::inf(5, 7);
+        let b = Points::new(2, 5, 5, 7);
+        assert!(matches!(
+            b + a,
+            Points::Point {
+                x: 2,
+                y: 5,
+                a: 5,
+                b: 7
+            }
+        ));
+    }
+
+    #[test]
+    fn test_add3() {
+        let a = Points::new(-1, -1, 5, 7);
+        let b = Points::new(-1, 1, 5, 7);
+        assert!(matches!(a + b, Points::Inf { a: 5, b: 7 }));
     }
 }
