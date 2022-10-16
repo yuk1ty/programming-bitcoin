@@ -168,7 +168,9 @@ impl<T: Display> Display for Points<T> {
 
 #[cfg(test)]
 mod test {
-    use crate::ecc::point::NewPoints;
+    use rug::Integer;
+
+    use crate::ecc::{field_element::FieldElement, point::NewPoints};
 
     use super::Points;
 
@@ -263,5 +265,31 @@ mod test {
                 b: 7
             }
         ));
+    }
+
+    fn field_elem(num: i32, prime: i32) -> FieldElement {
+        FieldElement::new(Integer::from(num), Integer::from(prime))
+    }
+
+    #[test]
+    fn test_field_elem_add1() {
+        let prime = 223;
+        let a = FieldElement::new(Integer::from(0), Integer::from(prime));
+        let b = FieldElement::new(Integer::from(7), Integer::from(prime));
+        let x1 = FieldElement::new(Integer::from(192), Integer::from(prime));
+        let y1 = FieldElement::new(Integer::from(105), Integer::from(prime));
+        let x2 = FieldElement::new(Integer::from(17), Integer::from(prime));
+        let y2 = FieldElement::new(Integer::from(56), Integer::from(prime));
+        let p1 = Points::new(x1, y1, a.clone(), b.clone());
+        let p2 = Points::new(x2, y2, a.clone(), b.clone());
+        assert_eq!(
+            p1 + p2,
+            Points::Point {
+                x: field_elem(170, prime),
+                y: field_elem(142, prime),
+                a: field_elem(0, prime),
+                b: field_elem(7, prime)
+            }
+        );
     }
 }

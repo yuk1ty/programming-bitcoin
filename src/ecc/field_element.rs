@@ -151,7 +151,7 @@ mod test {
     use rug::Integer;
 
     impl FieldElement {
-        pub fn new_i(num: i32, prime: i32) -> Self {
+        fn new_i(num: i32, prime: i32) -> Self {
             Self {
                 num: Integer::from(num),
                 prime: Integer::from(prime),
