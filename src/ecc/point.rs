@@ -1,18 +1,18 @@
 use std::{fmt::Display, ops::Add};
 
 #[derive(Debug, PartialEq)]
-pub enum Points {
-    Point { x: i128, y: i128, a: i128, b: i128 },
-    Inf { a: i128, b: i128 },
+pub enum Points<T> {
+    Point { x: T, y: T, a: T, b: T },
+    Inf { a: T, b: T },
 }
 
-impl Points {
-    pub fn new(x: i128, y: i128, a: i128, b: i128) -> Points {
+impl Points<i128> {
+    pub fn new(x: i128, y: i128, a: i128, b: i128) -> Points<i128> {
         assert_eq!(y.pow(2), x.pow(3) + a * x + b);
         Points::Point { x, y, a, b }
     }
 
-    pub fn inf(a: i128, b: i128) -> Points {
+    pub fn inf(a: i128, b: i128) -> Points<i128> {
         Points::Inf { a, b }
     }
 
@@ -41,8 +41,8 @@ impl Points {
     }
 }
 
-impl Add for Points {
-    type Output = Points;
+impl Add for Points<i128> {
+    type Output = Points<i128>;
 
     fn add(self, rhs: Self) -> Self::Output {
         assert!(self.a() == rhs.a() && self.b() == rhs.b());
@@ -91,9 +91,9 @@ impl Add for Points {
     }
 }
 
-impl Display for Points {
+impl<T: Display> Display for Points<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match *self {
+        match self {
             Points::Point { x, y, a, b } => write!(f, "Point({}, {})_{}_{}", x, y, a, b),
             Points::Inf { .. } => write!(f, "Point(infinity)"),
         }
