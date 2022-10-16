@@ -6,30 +6,21 @@ pub enum Points<T> {
     Inf { a: T, b: T },
 }
 
-impl Points<i128> {
-    pub fn new(x: i128, y: i128, a: i128, b: i128) -> Points<i128> {
-        assert_eq!(y.pow(2), x.pow(3) + a * x + b);
-        Points::Point { x, y, a, b }
-    }
-
-    pub fn inf(a: i128, b: i128) -> Points<i128> {
-        Points::Inf { a, b }
-    }
-
-    pub fn a(&self) -> i128 {
-        match *self {
-            Points::Point {
+impl<T> Points<T> {
+    pub fn a(&self) -> &T {
+        match &self {
+            &Points::Point {
                 x: _,
                 y: _,
                 a,
                 b: _,
             } => a,
-            Points::Inf { a, b: _ } => a,
+            &Points::Inf { a, b: _ } => a,
         }
     }
 
-    pub fn b(&self) -> i128 {
-        match *self {
+    pub fn b(&self) -> &T {
+        match &self {
             Points::Point {
                 x: _,
                 y: _,
@@ -38,6 +29,17 @@ impl Points<i128> {
             } => b,
             Points::Inf { a: _, b } => b,
         }
+    }
+}
+
+impl Points<i128> {
+    pub fn new(x: i128, y: i128, a: i128, b: i128) -> Points<i128> {
+        assert_eq!(y.pow(2), x.pow(3) + a * x + b);
+        Points::Point { x, y, a, b }
+    }
+
+    pub fn inf(a: i128, b: i128) -> Points<i128> {
+        Points::Inf { a, b }
     }
 }
 
@@ -84,7 +86,6 @@ impl Add for Points<i128> {
             }
             (Points::Inf { .. }, Points::Point { .. }) => rhs,
             (Points::Point { .. }, Points::Inf { .. }) => self,
-            // TODO 両方とも無限遠点だった場合はそもそも何かがおかしい？
             (Points::Inf { .. }, Points::Inf { .. }) => {
                 unreachable!("You can't pass both points at infinity here.")
             }
