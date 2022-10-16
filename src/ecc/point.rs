@@ -47,6 +47,7 @@ impl Add for Points<i128> {
     fn add(self, rhs: Self) -> Self::Output {
         assert!(self.a() == rhs.a() && self.b() == rhs.b());
         // TODO この実装にする場合、無限遠点が含まれる計算の捌き方がこれでよかったかを検討する必要がありそう。
+        // TODO ここの計算は全部マクロにしてしまうとよさそう。
         match (&self, &rhs) {
             (
                 &Points::Point {
