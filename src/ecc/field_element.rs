@@ -5,10 +5,10 @@ use rug::{
     Integer,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FieldElement {
     num: Integer,
-    prime: Integer,
+    pub prime: Integer,
 }
 
 impl FieldElement {
@@ -38,6 +38,22 @@ impl Add for FieldElement {
     }
 }
 
+impl Add<i32> for FieldElement {
+    type Output = FieldElement;
+
+    fn add(self, rhs: i32) -> Self::Output {
+        FieldElement::new(self.num + rhs, self.prime)
+    }
+}
+
+impl Add<FieldElement> for i32 {
+    type Output = FieldElement;
+
+    fn add(self, rhs: FieldElement) -> Self::Output {
+        FieldElement::new(self + rhs.num, rhs.prime)
+    }
+}
+
 impl Sub for FieldElement {
     type Output = FieldElement;
 
@@ -48,6 +64,22 @@ impl Sub for FieldElement {
     }
 }
 
+impl Sub<i32> for FieldElement {
+    type Output = FieldElement;
+
+    fn sub(self, rhs: i32) -> Self::Output {
+        FieldElement::new(self.num - rhs, self.prime)
+    }
+}
+
+impl Sub<FieldElement> for i32 {
+    type Output = FieldElement;
+
+    fn sub(self, rhs: FieldElement) -> Self::Output {
+        FieldElement::new(self - rhs.num, rhs.prime)
+    }
+}
+
 impl Mul for FieldElement {
     type Output = FieldElement;
 
@@ -55,6 +87,22 @@ impl Mul for FieldElement {
         assert!(self.prime == rhs.prime);
         let num = (self.num * rhs.num).rem_euc(&self.prime);
         FieldElement::new(num, self.prime)
+    }
+}
+
+impl Mul<i32> for FieldElement {
+    type Output = FieldElement;
+
+    fn mul(self, rhs: i32) -> Self::Output {
+        FieldElement::new(self.num * rhs, self.prime)
+    }
+}
+
+impl Mul<FieldElement> for i32 {
+    type Output = FieldElement;
+
+    fn mul(self, rhs: FieldElement) -> Self::Output {
+        FieldElement::new(self * rhs.num, rhs.prime)
     }
 }
 
@@ -70,6 +118,30 @@ impl Div for FieldElement {
                 .unwrap())
         .rem_euc(&self.prime);
         FieldElement::new(num, self.prime)
+    }
+}
+
+impl Div<i32> for FieldElement {
+    type Output = FieldElement;
+
+    fn div(self, rhs: i32) -> Self::Output {
+        let inv = Integer::from(rhs).invert(&self.prime).unwrap();
+        FieldElement::new(self.num * inv, self.prime)
+    }
+}
+
+impl Div<FieldElement> for i32 {
+    type Output = FieldElement;
+
+    fn div(self, rhs: FieldElement) -> Self::Output {
+        let inv = Integer::from(self).invert(&rhs.prime).unwrap();
+        FieldElement::new(rhs.num * inv, rhs.prime)
+    }
+}
+
+impl PartialEq<i32> for FieldElement {
+    fn eq(&self, other: &i32) -> bool {
+        self.num == Integer::from(*other)
     }
 }
 

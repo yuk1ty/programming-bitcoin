@@ -1,12 +1,22 @@
 use std::{fmt::Display, ops::Add};
 
-#[derive(Debug, PartialEq)]
+use super::field_element::FieldElement;
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Points<T> {
     Point { x: T, y: T, a: T, b: T },
     Inf { a: T, b: T },
 }
 
+pub trait NewPoints<T> {
+    fn new(x: T, y: T, a: T, b: T) -> Points<T>;
+}
+
 impl<T> Points<T> {
+    pub fn inf(a: T, b: T) -> Points<T> {
+        Points::Inf { a, b }
+    }
+
     pub fn a(&self) -> &T {
         match &self {
             &Points::Point {
@@ -32,14 +42,10 @@ impl<T> Points<T> {
     }
 }
 
-impl Points<i128> {
-    pub fn new(x: i128, y: i128, a: i128, b: i128) -> Points<i128> {
+impl NewPoints<i128> for Points<i128> {
+    fn new(x: i128, y: i128, a: i128, b: i128) -> Points<i128> {
         assert_eq!(y.pow(2), x.pow(3) + a * x + b);
         Points::Point { x, y, a, b }
-    }
-
-    pub fn inf(a: i128, b: i128) -> Points<i128> {
-        Points::Inf { a, b }
     }
 }
 
@@ -48,8 +54,6 @@ impl Add for Points<i128> {
 
     fn add(self, rhs: Self) -> Self::Output {
         assert!(self.a() == rhs.a() && self.b() == rhs.b());
-        // TODO この実装にする場合、無限遠点が含まれる計算の捌き方がこれでよかったかを検討する必要がありそう。
-        // TODO ここの計算は全部マクロにしてしまうとよさそう。
         match (&self, &rhs) {
             (
                 &Points::Point {
@@ -93,6 +97,66 @@ impl Add for Points<i128> {
     }
 }
 
+impl NewPoints<FieldElement> for Points<FieldElement> {
+    fn new(
+        x: FieldElement,
+        y: FieldElement,
+        a: FieldElement,
+        b: FieldElement,
+    ) -> Points<FieldElement> {
+        assert_eq!(y.pow(2), x.pow(3) + a.clone() * x.clone() + b.clone());
+        Points::Point { x, y, a, b }
+    }
+}
+
+impl Add for Points<FieldElement> {
+    type Output = Points<FieldElement>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        assert!(self.a() == rhs.a() && self.b() == rhs.b());
+        match (self.clone(), rhs.clone()) {
+            (
+                Points::Point {
+                    x: x1,
+                    y: y1,
+                    a: a1,
+                    b: b1,
+                },
+                Points::Point { x: x2, y: y2, .. },
+            ) => {
+                if x1 == x2 && y1 != y2 {
+                    return Points::Inf { a: a1, b: b1 };
+                }
+
+                if x1 != x2 {
+                    let s = (y2 - y1.clone()) / (x2.clone() - x1.clone());
+                    let x = s.pow(2) - x1.clone() - x2.clone();
+                    let y = s * (x1 - x.clone()) - y1;
+                    return Points::Point { x, y, a: a1, b: b1 };
+                }
+
+                if self == rhs && y1 == 0 {
+                    return Points::Inf { a: a1, b: b1 };
+                }
+
+                if self == rhs {
+                    let s = (3 * x1.pow(2) + a1.clone()) / (2 * y1.clone());
+                    let x = s.pow(2) - 2 * x1.clone();
+                    let y = s * (x1 - x.clone()) - y1;
+                    return Points::Point { x, y, a: a1, b: b1 };
+                }
+
+                unreachable!("Theoretically unreachable point!")
+            }
+            (Points::Inf { .. }, Points::Point { .. }) => rhs,
+            (Points::Point { .. }, Points::Inf { .. }) => self,
+            (Points::Inf { .. }, Points::Inf { .. }) => {
+                unreachable!("You can't pass both points at infinity here.")
+            }
+        }
+    }
+}
+
 impl<T: Display> Display for Points<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -104,6 +168,8 @@ impl<T: Display> Display for Points<T> {
 
 #[cfg(test)]
 mod test {
+    use crate::ecc::point::NewPoints;
+
     use super::Points;
 
     #[test]
